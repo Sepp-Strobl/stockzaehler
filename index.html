@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Stockschützen Zähler</title>
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e5530">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Stock-Zähler">
+  <style>
+:root {
+  --gruen: #2d7d46;
+  --gruen-dunkel: #1e5530;
+  --gruen-hell: #e8f5ec;
+  --blau: #1a5f8a;
+  --rot: #c0392b;
+  --gold: #b5860d;
+  --grau: #6b7280;
+  --grau-hell: #f3f4f6;
+  --weiss: #ffffff;
+  --text: #1f2937;
+  --border: #d1d5db;
+  --schatten: 0 2px 8px rgba(0,0,0,0.10);
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f1; color: var(--text); font-size: 16px; line-height: 1.4; }
+.hidden { display: none !important; }
+
+header { background: var(--gruen-dunkel); color: var(--weiss); padding: 0.7rem 1rem; display: flex; align-items: center; gap: 0.75rem; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+header img { width: 2.8rem; height: 2.8rem; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.6); }
+header h1 { font-size: 1.2rem; }
+header p { font-size: 0.8rem; opacity: 0.75; }
+
+main { max-width: 520px; margin: 0 auto; padding: 1rem; }
+
+.stat-zeile { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.stat { background: var(--weiss); border-radius: var(--radius); box-shadow: var(--schatten); padding: 0.6rem; text-align: center; border-top: 4px solid var(--border); }
+.stat.eng { border-color: var(--blau); } .stat.weit { border-color: var(--rot); } .stat.alle { border-color: var(--gold); }
+.stat span { display: block; font-size: 0.7rem; color: var(--grau); text-transform: uppercase; letter-spacing: 0.05em; }
+.stat b { font-size: 1.6rem; }
+
+.kehre { text-align: center; font-weight: 700; letter-spacing: 0.08em; color: var(--gold); margin: 1rem 0 0.5rem; }
+.stand { display: flex; align-items: center; justify-content: center; gap: 1rem; background: var(--weiss); border-radius: var(--radius); box-shadow: var(--schatten); padding: 1rem; margin-bottom: 1rem; }
+.team { text-align: center; flex: 1; }
+.team span { display: block; font-size: 0.85rem; font-weight: 700; color: var(--grau); }
+.team b { font-size: 4rem; line-height: 1.1; }
+.team.eng b { color: var(--blau); } .team.weit b { color: var(--rot); }
+.vs { font-size: 2rem; color: var(--grau); }
+
+.titel { text-align: center; font-weight: 600; margin-bottom: 0.6rem; }
+.zwei { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+.punkte { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-bottom: 0.75rem; }
+button { font-family: inherit; border: none; border-radius: var(--radius); padding: 1.1rem; font-size: 1.1rem; font-weight: 700; cursor: pointer; color: var(--weiss); touch-action: manipulation; width: 100%; }
+button:active { transform: scale(0.98); }
+.b-eng { background: var(--blau); } .b-weit { background: var(--rot); }
+.b-punkt { background: var(--gruen); font-size: 1.6rem; }
+.b-null { background: var(--weiss); color: var(--text); border: 2px solid var(--border); padding: 1rem; margin-bottom: 0.75rem; }
+.b-sek { background: var(--weiss); color: var(--text); border: 1px solid var(--border); padding: 0.7rem; font-size: 0.95rem; font-weight: 600; }
+.b-gefahr { background: var(--rot); }
+.b-ok { background: var(--gruen); }
+
+.verlauf { margin: 0.5rem 0 1rem; font-size: 0.95rem; background: var(--weiss); border-radius: var(--radius); box-shadow: var(--schatten); padding: 0.25rem 0.75rem; }
+.verlauf:empty { display: none; }
+.zeile { display: flex; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px solid var(--grau-hell); }
+.zeile:last-child { border-bottom: none; }
+
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50; }
+.box { background: var(--weiss); border-radius: 16px; padding: 1.5rem; width: 100%; max-width: 380px; text-align: center; }
+.box h2 { color: var(--gruen-dunkel); margin-bottom: 0.5rem; }
+.box .gross { font-size: 3rem; font-weight: 800; margin: 0.25rem 0 1rem; }
+.box p { margin-bottom: 1rem; }
+.box .zwei { margin-bottom: 0; }
+.box button { padding: 0.9rem; font-size: 1rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <img alt="Stockschützen" src="icon-192.png">
+  <div>
+    <h1>Stockschützen Zähler</h1>
+    <p>Eng gegen Weit · 6 Kehren</p>
+  </div>
+</header>
+
+<main>
+  <div class="stat-zeile">
+    <div class="stat eng"><span>Siege Eng</span><b id="siege-eng">0</b></div>
+    <div class="stat alle"><span>Spiele</span><b id="spiele">0</b></div>
+    <div class="stat weit"><span>Siege Weit</span><b id="siege-weit">0</b></div>
+  </div>
+
+  <div class="kehre" id="kehre-label">KEHRE 1 / 6</div>
+  <div class="stand">
+    <div class="team eng"><span>ENG</span><b id="res-eng">0</b></div>
+    <div class="vs">:</div>
+    <div class="team weit"><span>WEIT</span><b id="res-weit">0</b></div>
+  </div>
+
+  <div id="schritt-1">
+    <p class="titel">Wer schreibt in dieser Kehre?</p>
+    <div class="zwei">
+      <button class="b-eng" onclick="wahl('ENG')">ENG</button>
+      <button class="b-weit" onclick="wahl('WEIT')">WEIT</button>
+    </div>
+    <button class="b-null" onclick="punkte(0)">Keiner schreibt – 0 Punkte</button>
+  </div>
+  <div id="schritt-2" class="hidden">
+    <p class="titel" id="pt-titel"></p>
+    <div class="punkte">
+      <button class="b-punkt" onclick="punkte(1)">1</button>
+      <button class="b-punkt" onclick="punkte(2)">2</button>
+      <button class="b-punkt" onclick="punkte(3)">3</button>
+      <button class="b-punkt" onclick="punkte(4)">4</button>
+      <button class="b-punkt" onclick="punkte(5)">5</button>
+      <button class="b-punkt" onclick="punkte(6)">6</button>
+    </div>
+    <button class="b-null" onclick="abbruch()">Zurück</button>
+  </div>
+
+  <div class="verlauf" id="verlauf"></div>
+
+  <div class="zwei">
+    <button class="b-sek" onclick="rueckgaengig()">Rückgängig</button>
+    <button class="b-sek" onclick="frage('spiel')" style="color:var(--rot);border-color:var(--rot);">Alles zurücksetzen</button>
+  </div>
+</main>
+
+<div id="ende" class="overlay hidden">
+  <div class="box">
+    <h2 id="ende-titel"></h2>
+    <div class="gross" id="ende-stand"></div>
+    <div class="zwei">
+      <button class="b-sek" onclick="rueckgaengig()">Letzte Kehre korrigieren</button>
+      <button class="b-ok" onclick="naechstes()">Nächstes Spiel</button>
+    </div>
+  </div>
+</div>
+
+<div id="frage" class="overlay hidden">
+  <div class="box">
+    <h2 id="frage-titel"></h2>
+    <p id="frage-text"></p>
+    <div class="zwei">
+      <button class="b-sek" onclick="frageZu()">Abbrechen</button>
+      <button class="b-gefahr" onclick="frageJa()">Ja, löschen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = 'stock_zaehler_v1';
+const KEHREN = 6;
+let z = { kehren: [], statistik: { spiele: 0, eng: 0, weit: 0, remis: 0 } };
+let aktiv = '';
+let frageArt = '';
+
+function laden() {
+  try {
+    const roh = localStorage.getItem(KEY);
+    if (roh) z = Object.assign(z, JSON.parse(roh));
+  } catch (e) {}
+}
+function speichern() {
+  try { localStorage.setItem(KEY, JSON.stringify(z)); } catch (e) {}
+}
+function summe() {
+  return {
+    eng: z.kehren.reduce((s, k) => s + k.e, 0),
+    weit: z.kehren.reduce((s, k) => s + k.w, 0)
+  };
+}
+const el = id => document.getElementById(id);
+
+function wahl(team) {
+  aktiv = team;
+  el('pt-titel').textContent = team + ' schreibt:';
+  el('schritt-1').classList.add('hidden');
+  el('schritt-2').classList.remove('hidden');
+}
+function abbruch() {
+  aktiv = '';
+  el('schritt-1').classList.remove('hidden');
+  el('schritt-2').classList.add('hidden');
+}
+// 0 Punkte ohne Teamwahl: keiner schreibt
+function punkte(p) {
+  if (z.kehren.length >= KEHREN) return;
+  z.kehren.push({ e: aktiv === 'ENG' ? p : 0, w: aktiv === 'WEIT' ? p : 0 });
+  abbruch();
+  speichern();
+  render();
+  if (z.kehren.length >= KEHREN) ende();
+}
+function rueckgaengig() {
+  if (z.kehren.length === 0) return;
+  z.kehren.pop();
+  el('ende').classList.add('hidden');
+  abbruch();
+  speichern();
+  render();
+}
+function ende() {
+  const s = summe();
+  el('ende-titel').textContent = s.eng > s.weit ? 'ENG gewinnt!' : s.weit > s.eng ? 'WEIT gewinnt!' : 'Unentschieden';
+  el('ende-stand').textContent = s.eng + ' : ' + s.weit;
+  el('ende').classList.remove('hidden');
+}
+function naechstes() {
+  const s = summe();
+  z.statistik.spiele++;
+  if (s.eng > s.weit) z.statistik.eng++;
+  else if (s.weit > s.eng) z.statistik.weit++;
+  else z.statistik.remis++;
+  z.kehren = [];
+  el('ende').classList.add('hidden');
+  speichern();
+  render();
+}
+
+// Eigener Bestätigungsdialog (statt confirm(), das auf manchen Geräten blockiert wird)
+function frage(art) {
+  frageArt = art;
+  el('frage-titel').textContent = 'Alles zurücksetzen?';
+  el('frage-text').textContent = 'Alle Kehren, der Stand und die gewonnenen Spiele werden gelöscht. Es beginnt wieder bei 0.';
+  el('frage').classList.remove('hidden');
+}
+function frageZu() { el('frage').classList.add('hidden'); frageArt = ''; }
+function frageJa() {
+  z = { kehren: [], statistik: { spiele: 0, eng: 0, weit: 0, remis: 0 } };
+  abbruch();
+  speichern();
+  render();
+  frageZu();
+}
+
+function render() {
+  const s = summe();
+  el('res-eng').textContent = s.eng;
+  el('res-weit').textContent = s.weit;
+  el('siege-eng').textContent = z.statistik.eng;
+  el('siege-weit').textContent = z.statistik.weit;
+  el('spiele').textContent = z.statistik.spiele;
+  const n = z.kehren.length;
+  el('kehre-label').textContent = n < KEHREN ? 'KEHRE ' + (n + 1) + ' / ' + KEHREN : 'ENDE';
+  el('verlauf').innerHTML = z.kehren.map((k, i) =>
+    '<div class="zeile"><span>Kehre ' + (i + 1) + '</span><b>' +
+    (k.e === 0 && k.w === 0 ? 'keine Punkte' : k.e + ' : ' + k.w) + '</b></div>').reverse().join('');
+}
+
+laden();
+render();
+if (z.kehren.length >= KEHREN) ende();
+</script>
+</body>
+</html>
